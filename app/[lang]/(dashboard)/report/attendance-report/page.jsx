@@ -1,0 +1,95 @@
+"use client";
+
+import PageLayout from "@/components/page-layout";
+import BasicTableLayout from "@/components/table/basic-table-layout";
+import { DynamicForm } from "@/components/form/dynamic-form";
+import formFields from "./config/fields";
+import columns from "./config/columns";
+import { useReport } from "@/domains/report/hook/useReport";
+import ReportActions from "@/components/report/ReportActions";
+import useAuth from "@/domains/auth/hooks/useAuth";
+import { useEffect } from "react";
+import { useFetchFeatureSettingsQuery } from "@/domains/settings/services/featureSettingApi";
+import {
+    enforceProjectFeatureFormState,
+    filterProjectFeatureItems,
+    isProjectFeatureEnabled,
+} from "@/lib/menu-features";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
+
+const AttendanceReportPage = () => {
+    const { user } = useAuth();
+    const roleLevel = Number(user?.user?.roles?.[0]?.level ?? user?.role_id);
+    const employeeId = user?.employee?.id;
+
+    const { actions, reportState } = useReport(
+        "attendance-report/attendance-report",
+        "attendance-report",
+        {
+            actions: {
+                jobCard: {
+                    route: "job-card",
+                    format: "pdf",
+                    preparePayload: (payload) => {
+                        if (roleLevel !== 3 || !employeeId) {
+                            return payload;
+                        }
+
+                        return {
+                            ...payload,
+                            employee_id: employeeId,
+                            employee_ids: [employeeId],
+                        };
+                    },
+                },
+            },
+        },
+    );
+    // const { user } = useAuth();
+    const { data: featureSettings } = useFetchFeatureSettingsQuery();
+    const projectEnabled = isProjectFeatureEnabled(featureSettings);
+    const projectId = reportState.form.watch("project_id");
+    console.log(reportState);
+
+    useEffect(() => {
+        enforceProjectFeatureFormState(reportState.form, projectEnabled);
+    }, [reportState.form, projectEnabled, projectId]);
+
+    return (
+        <PageLayout>
+            <div className="bg-white p-6 rounded-md shadow mb-6 relative z-20">
+                <DynamicForm
+                    form={reportState.form}
+                    fields={filterProjectFeatureItems(formFields(reportState.form, user), projectEnabled)}
+                    onSubmit={() => actions.handleAction("filter")}
+                />
+
+                <ReportActions
+                    form={reportState.form}
+                    onAction={actions.handleAction}
+                    onReset={actions.onReset}
+                    extraActions={
+                        <Button
+                            onClick={() => actions.handleAction("jobCard")}
+                            className="bg-violet-600 hover:bg-violet-700 text-white"
+                        >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Job Card
+                        </Button>
+                    }
+                />
+            </div>
+
+            <BasicTableLayout
+                columns={filterProjectFeatureItems(columns(), projectEnabled)}
+                state={reportState}
+                search
+                addPermission={null}
+                searchKey="employee"
+            />
+        </PageLayout>
+    );
+};
+
+export default AttendanceReportPage;
