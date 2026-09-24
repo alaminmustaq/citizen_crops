@@ -69,6 +69,20 @@ const latePunishmentFields = (form) => [
         visibility: form.watch("early_punishment_type") === "fixed",
         inputProps: { min: 0, step: "0.01", type: "number" },
     },
+    {
+        name: "absence_deduction_type",
+        type: "select",
+        label: "Absence Deduction Calculation",
+        placeholder: "Select calculation base (Default: Basic Salary)",
+        colSpan: "col-span-12 md:col-span-4",
+        options: [
+            { label: "Basic Salary (1 Day)", value: "basic" },
+            { label: "Gross Salary (1 Day)", value: "gross" },
+        ],
+        handleChange: (e) => {
+            form.setValue("absence_deduction_type", e.value);
+        },
+    },
 ];
 
 export default latePunishmentFields;
