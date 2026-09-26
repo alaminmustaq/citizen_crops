@@ -50,6 +50,10 @@ const fields = (form, user) => [
                 value: "hourly",
             },
             {
+                label: "Weekly",
+                value: "weekly",
+            },
+            {
                 label: "Monthly",
                 value: "monthly",
             },

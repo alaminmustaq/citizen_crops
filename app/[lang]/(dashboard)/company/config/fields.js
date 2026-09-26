@@ -181,6 +181,23 @@ const fields = [
         rules: { required: "Select at least one weekly holiday" }
 
     },
+    {
+        name: "week_start_day",
+        type: "select",
+        label: "Week Start Day *",
+        placeholder: "Select week start day",
+        colSpan: "col-span-12 md:col-span-6",
+        options: [
+            { label: "Saturday", value: "saturday" },
+            { label: "Sunday", value: "sunday" },
+            { label: "Monday", value: "monday" },
+            { label: "Tuesday", value: "tuesday" },
+            { label: "Wednesday", value: "wednesday" },
+            { label: "Thursday", value: "thursday" },
+            { label: "Friday", value: "friday" },
+        ],
+        rules: { required: "Week start day is required" }
+    },
 
     {
         name: "description",

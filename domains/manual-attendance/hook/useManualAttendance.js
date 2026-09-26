@@ -496,7 +496,7 @@ export const useManualAttendance = () => {
 
                 // 🟢 Fix for monthly salary: convert empty strings to null
                 if (
-                    preparedData.salary_type === "monthly" &&
+                    (preparedData.salary_type === "monthly" || preparedData.salary_type === "weekly") &&
                     Array.isArray(preparedData.employees)
                 ) {
                     preparedData.employees = preparedData.employees.map(
@@ -676,6 +676,7 @@ export const useManualAttendance = () => {
                     department_id,
                     project_id,
                     attendance_type,
+                    salary_type,
                 } = normalizeSelectValues(value, [
                     "branch_id",
                     "department_id",
@@ -686,6 +687,7 @@ export const useManualAttendance = () => {
                     department_id,
                     project_id,
                     attendance_type,
+                    salary_type: value?.salary_type || salary_type,
                 };
 
                 await handleEmployeeFilter(currentValueIs);

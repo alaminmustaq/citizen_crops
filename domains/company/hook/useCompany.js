@@ -118,6 +118,7 @@ export const useCompany = () => {
                 weekly_holiday: data.business_info?.weekly_holiday
                     ? data.business_info.weekly_holiday.split(",")
                     : [],
+                week_start_day: data.business_info?.week_start_day || "saturday",
 
                 // registration_info
                 registration_number:

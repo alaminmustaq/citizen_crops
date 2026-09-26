@@ -280,18 +280,20 @@ const fields = (actions, form) => {
                     value: "hourly",
                 },
                 {
+                    label: "Weekly",
+                    value: "weekly",
+                },
+                {
                     label: "Monthly",
                     value: "monthly",
                 },
             ],
-            // handleChange: (e) => {
-            //     form.setValue('attendance_scope', e.value);
-
-            //     // Clear single_attendance if switching to all attendance
-            //     if (e.value === "all_attendance") {
-            //         form.setValue('single_attendance', null);
-            //     }
-            // },
+            handleChange: (e) => {
+                const val = e?.target?.value ?? e?.value ?? e;
+                form.setValue("salary_type", val);
+                form.setValue("single_attendance", null);
+                actions.onAttendanceTypeChange();
+            },
             disabled: form.watch("id"),
             rules: { required: "Salary type is required" },
         },
@@ -304,7 +306,7 @@ const fields = (actions, form) => {
                 "hrm/filter-employees",
                 "employees",
                 "employTemplate",
-                ["department_id", "branch_id", "project_id"],
+                ["department_id", "branch_id", "project_id", "salary_type"],
             ],
             handleChange: (value) => {
                 const existingEmployees = form.getValues("employees") || [];

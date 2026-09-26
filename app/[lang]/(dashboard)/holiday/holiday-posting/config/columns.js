@@ -73,11 +73,15 @@ const leaveApplicationColumns = (actions) => [
     thClass: "!text-center",
     tdClass: "!text-center",
     cell: ({ row }) => {
-      const start = row.original.start_date ? new Date(row.original.start_date) : null;
-      const end = row.original.end_date ? new Date(row.original.end_date) : null;
-      if (start && end) {
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const startRaw = row.original.start_date;
+      const endRaw = row.original.end_date;
+      if (startRaw && endRaw) {
+        const start = new Date(startRaw);
+        const end = new Date(endRaw);
+        const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        const diffTime = Math.abs(endDay - startDay);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
         return diffDays;
       }
       return "-";
