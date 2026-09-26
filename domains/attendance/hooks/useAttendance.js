@@ -674,7 +674,7 @@ const useAttendance = () => {
 
     const getBreakStatus = useCallback(async () => {
         try {
-            const response = await triggerGetBreakStatus().unwrap();
+            const response = await triggerGetBreakStatus(undefined, false).unwrap();
             return {
                 success: true,
                 data: response.data,

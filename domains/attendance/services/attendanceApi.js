@@ -136,6 +136,8 @@ export const attendanceApi = createApi({
                 url: "hrm/attendance/break-status",
                 method: "GET",
             }),
+            keepUnusedDataFor: 0,
+            refetchOnMountOrArgChange: true,
             providesTags: ["Attendance"],
         }),
 

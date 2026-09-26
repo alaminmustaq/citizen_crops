@@ -100,6 +100,7 @@ export default function QRAttendance() {
     const legacyRef = useRef(null);
     const webcamRef = useRef(null);
     const attendanceActionLockedRef = useRef(false);
+    const pendingReasonRef = useRef("");
     const [scannerKey, setScannerKey] = useState(0);
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [requestReason, setRequestReason] = useState("");
@@ -225,18 +226,16 @@ export default function QRAttendance() {
 
         const status = await getBreakStatus();
 
-        if (status.success && status.data?.on_break) {
-            setActiveBreak(status.data);
-            setAttendanceReason("");
-            setSelectedBreakReason("");
-            setBreakEndModalOpen(true);
-            return;
-        }
+        const count = status.data?.attendance_count ?? 0;
+        const isReturningOrEntering =
+            !status.success ||
+            !status.data?.has_attendance ||
+            status.data?.next_action === "in" ||
+            status.data?.next_action === "break_end" ||
+            Boolean(status.data?.on_break) ||
+            count % 2 === 0;
 
-        if (
-            status.success &&
-            (!status.data?.has_attendance || status.data?.next_action === "in")
-        ) {
+        if (isReturningOrEntering) {
             setPendingReason("");
 
             if (mode === "manual") {
@@ -259,6 +258,7 @@ export default function QRAttendance() {
         setAttendanceReason("");
         setSelectedBreakReason("");
         setPendingReason("");
+        pendingReasonRef.current = "";
         setPendingAttendanceMode(mode);
         setReasonModalOpen(true);
     };
@@ -267,6 +267,7 @@ export default function QRAttendance() {
         setReasonModalOpen(false);
         setPendingAttendanceMode(null);
         setPendingReason("");
+        pendingReasonRef.current = "";
         setAttendanceReason("");
         setSelectedBreakReason("");
     };
@@ -305,6 +306,7 @@ export default function QRAttendance() {
         setReasonModalOpen(false);
         setPendingAttendanceMode(null);
         setPendingReason(reason);
+        pendingReasonRef.current = reason;
 
         if (mode === "manual") {
             setStep("processing");
@@ -365,7 +367,7 @@ export default function QRAttendance() {
                     } catch {}
 
                     // Process attendance with location
-                    await processAttendance(text, pendingReason);
+                    await processAttendance(text, pendingReasonRef.current || pendingReason);
                 }
             }
             if (!!error) {
@@ -437,7 +439,7 @@ export default function QRAttendance() {
     };
 
     // Process attendance after QR scan
-    const processAttendance = async (qrData, reason = attendanceReason) => {
+    const processAttendance = async (qrData, reason = null) => {
         if (!coords) {
             setErrorMsg(
                 "Location is required for attendance. Please allow location access.",
@@ -450,6 +452,7 @@ export default function QRAttendance() {
         if (isProcessingAttendance) return;
         setIsProcessingAttendance(true);
         let shouldShowResultModal = true;
+        const reasonToUse = reason ?? pendingReasonRef.current ?? pendingReason ?? attendanceReason;
 
         try {
             // For now, we'll assume check-in by default
@@ -459,7 +462,7 @@ export default function QRAttendance() {
                 coords.lat,
                 coords.lng,
                 branch,
-                reason?.trim() || null,
+                reasonToUse?.trim() || null,
             );
             const resultMessage =
                 result?.message ||
@@ -496,6 +499,8 @@ export default function QRAttendance() {
             return;
         } finally {
             setIsProcessingAttendance(false);
+            pendingReasonRef.current = "";
+            setPendingReason("");
             if (shouldShowResultModal) {
                 setStep("result");
             }
@@ -636,21 +641,29 @@ export default function QRAttendance() {
                   body: "text-blue-800",
                   button: "bg-blue-600 hover:bg-blue-700",
               }
-            : resultMessageLower.includes("out")
+            : resultMessageLower.includes("returned")
               ? {
-                    title: "Exit Recorded",
-                    panel: "border-slate-200 bg-slate-50",
-                    heading: "text-slate-900",
-                    body: "text-slate-700",
-                    button: "bg-slate-900 hover:bg-slate-800",
+                    title: "Returned",
+                    panel: "border-emerald-200 bg-emerald-50",
+                    heading: "text-emerald-900",
+                    body: "text-emerald-800",
+                    button: "bg-emerald-600 hover:bg-emerald-700",
                 }
-              : {
-                    title: "Arrival Recorded",
-                    panel: "border-green-200 bg-green-50",
-                    heading: "text-green-900",
-                    body: "text-green-800",
-                    button: "bg-green-600 hover:bg-green-700",
-                };
+              : resultMessageLower.includes("out")
+                ? {
+                      title: "Exit Recorded",
+                      panel: "border-slate-200 bg-slate-50",
+                      heading: "text-slate-900",
+                      body: "text-slate-700",
+                      button: "bg-slate-900 hover:bg-slate-800",
+                  }
+                : {
+                      title: "Arrival Recorded",
+                      panel: "border-green-200 bg-green-50",
+                      heading: "text-green-900",
+                      body: "text-green-800",
+                      button: "bg-green-600 hover:bg-green-700",
+                  };
 
     return (
         <PageLayout>
