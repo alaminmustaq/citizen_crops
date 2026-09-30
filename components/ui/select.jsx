@@ -142,7 +142,7 @@ const SelectTrigger = React.forwardRef(
       {...props}
     >
       {children}
-      <SelectPrimitive.Icon asChild>{icon}</SelectPrimitive.Icon>
+      <SelectPrimitive.Icon>{icon}</SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
 );

@@ -1,5 +1,3 @@
-import { useAppSelector } from "@/hooks/use-redux";
-
 const dayMap = {
     sunday: 0,
     monday: 1,
@@ -37,7 +35,6 @@ const getPayrollWeeks = (salaryMonth, weekStartDay = "saturday") => {
         const endMonth = currentEnd.getUTCMonth() + 1;
         const endMonthStr = `${endYear}-${String(endMonth).padStart(2, "0")}`;
 
-        // A week belongs strictly to the month of its End Date (to_date)
         if (endMonthStr === salaryMonth) {
             const fromStr = currentStart.toISOString().slice(0, 10);
             const toStr = currentEnd.toISOString().slice(0, 10);
@@ -66,7 +63,6 @@ const getPayrollWeeks = (salaryMonth, weekStartDay = "saturday") => {
 
         currentStart.setUTCDate(currentStart.getUTCDate() + 7);
 
-        // Stop once currentStart passes monthEnd and the end date is past salaryMonth
         if (currentStart > monthEnd && endMonthStr > salaryMonth) {
             break;
         }
@@ -75,11 +71,18 @@ const getPayrollWeeks = (salaryMonth, weekStartDay = "saturday") => {
     return weeks;
 };
 
-const fields = (form, actions) => {
-    const { user } = useAppSelector((state) => state.auth);
-
+const fields = (
+    form,
+    actions,
+    user,
+    salaryApprovalEnabled = true,
+    partialPaymentEnabled = true,
+) => {
     const paymentFrequency = form.watch("payment_frequency") || "monthly";
     const salaryMonth = form.watch("salary_month");
+    const branchVal = form.watch("branch_id");
+    const selectedBranch = branchVal?.value ?? branchVal;
+    const isAllBranch = selectedBranch === "all-branch";
     const weekStartDay =
         user?.company?.week_start_day ||
         user?.employee?.company?.week_start_day ||
@@ -118,13 +121,23 @@ const fields = (form, actions) => {
             options: [
                 { label: "Monthly", value: "monthly" },
                 { label: "Weekly", value: "weekly" },
+                { label: "Hourly", value: "hourly" },
             ],
             handleChange: (e) => {
                 const val = e?.target?.value ?? e?.value ?? e;
                 form.setValue("payment_frequency", val);
-                form.setValue("payroll_week", null, { shouldValidate: true, shouldDirty: true });
-                form.setValue("from_date", null, { shouldValidate: true, shouldDirty: true });
-                form.setValue("to_date", null, { shouldValidate: true, shouldDirty: true });
+                form.setValue("payroll_week", null, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                });
+                form.setValue("from_date", null, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                });
+                form.setValue("to_date", null, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                });
             },
             rules: { required: "Payment frequency is required" },
         },
@@ -148,6 +161,13 @@ const fields = (form, actions) => {
                     ? []
                     : [{ label: "All Branch", value: "all-branch" }],
             colSpan: "col-span-12 md:col-span-6",
+            handleChange: (val) => {
+                form.setValue("branch_id", val);
+                const rawVal = val?.value ?? val;
+                if (rawVal === "all-branch") {
+                    form.setValue("department_id", null);
+                }
+            },
             rules: { required: "Branch is required" },
         },
         {
@@ -161,7 +181,10 @@ const fields = (form, actions) => {
                 "departmentSearchTemplate",
                 ["branch_id", "scope_type"],
             ],
-            placeholder: "Optional",
+            placeholder: isAllBranch
+                ? "All Departments Selected"
+                : "Select Department",
+            disabled: isAllBranch,
             colSpan: "col-span-12 md:col-span-6",
         },
         {
@@ -197,9 +220,18 @@ const fields = (form, actions) => {
             handleChange: (e) => {
                 const val = e?.target?.value ?? e?.value ?? e;
                 form.setValue("salary_month", val);
-                form.setValue("payroll_week", null, { shouldValidate: true, shouldDirty: true });
-                form.setValue("from_date", null, { shouldValidate: true, shouldDirty: true });
-                form.setValue("to_date", null, { shouldValidate: true, shouldDirty: true });
+                form.setValue("payroll_week", null, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                });
+                form.setValue("from_date", null, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                });
+                form.setValue("to_date", null, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                });
             },
             rules: { required: "Salary month is required" },
         },
@@ -267,7 +299,10 @@ const fields = (form, actions) => {
                         if (!value) {
                             return "To Date is required for weekly salary generation";
                         }
-                        if (formValues.from_date && value < formValues.from_date) {
+                        if (
+                            formValues.from_date &&
+                            value < formValues.from_date
+                        ) {
                             return "To Date cannot be before From Date";
                         }
                     }
@@ -275,6 +310,26 @@ const fields = (form, actions) => {
                 },
             },
         },
+
+        // =============== Pay Full (Shown when salary approval feature is OFF and partial payment is ON) ===============
+        ...(!salaryApprovalEnabled && partialPaymentEnabled
+            ? [
+                  {
+                      name: "pay_full",
+                      type: "checkbox",
+                      label: "Pay full salary of these records",
+                      colSpan: "col-span-12 md:col-span-6",
+                      handleChange: (e) => {
+                          const checked = e?.target?.checked ?? e;
+                          form.setValue("pay_full", checked);
+                          if (!checked) {
+                              form.setValue("excluded_employee_ids", []);
+                              form.setValue("excluded_ids", []);
+                          }
+                      },
+                  },
+              ]
+            : []),
 
         // =============== Additional Details ===============
         {

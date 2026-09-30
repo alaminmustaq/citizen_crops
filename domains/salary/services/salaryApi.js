@@ -19,10 +19,10 @@ export const salaryApi = createApi({
 
         // Fetch all salaries with filters and pagination
         salaryFetch: builder.query({
-            query: () => ({
+            query: (params) => ({
                 url: "hrm/salaries",
                 method: "GET",
-                params: { ...getFilterParams() }, // fetch all salaries
+                params: { ...getFilterParams(), ...params }, // fetch all salaries with filters
             }),
             providesTags: ["Salary"],
         }),
@@ -87,6 +87,53 @@ export const salaryApi = createApi({
             }),
             invalidatesTags: ["Salary"],
         }),
+
+        // Record salary payment (disbursal)
+        salaryPay: builder.mutation({
+            query: ({ salaryId, ...data }) => ({
+                url: `hrm/salaries/${salaryId}/payments`,
+                method: "POST",
+                body: data,
+            }),
+            invalidatesTags: ["Salary"],
+        }),
+
+        // Record bulk salary payment
+        salaryBulkPay: builder.mutation({
+            query: (data) => ({
+                url: "hrm/salaries/bulk-payment",
+                method: "POST",
+                body: data,
+            }),
+            invalidatesTags: ["Salary"],
+        }),
+
+        // Fetch payments history for a salary
+        salaryGetPayments: builder.query({
+            query: (salaryId) => ({
+                url: `hrm/salaries/${salaryId}/payments`,
+                method: "GET",
+            }),
+            providesTags: (result, error, salaryId) => [{ type: "Salary", id: salaryId }],
+        }),
+
+        // Fetch active bank branches for payment selection
+        bankFetchActive: builder.query({
+            query: () => ({
+                url: "bank/banks",
+                method: "GET",
+                params: { isActive: true, per_page: 100 },
+            }),
+        }),
+
+        // Preview employees for salary generation
+        salaryPreview: builder.mutation({
+            query: (data) => ({
+                url: "hrm/salaries/preview",
+                method: "POST",
+                body: data,
+            }),
+        }),
     }),
 });
 
@@ -102,4 +149,9 @@ export const {
     useLazySalaryGetByIdQuery,
     useSalaryUpdateMutation,
     useSalaryDeleteMutation,
+    useSalaryPayMutation,
+    useSalaryBulkPayMutation,
+    useSalaryGetPaymentsQuery,
+    useBankFetchActiveQuery,
+    useSalaryPreviewMutation,
 } = salaryApi;

@@ -471,10 +471,10 @@ export const menusConfig = {
                     permission: "view-salary-reports",
                 },
                 {
-                    title: "Pay Slip",
-                    href: "/report/pay-slip",
+                    title: "Salary Payment Report",
+                    href: "/report/salary-payment-report",
                     icon: FileCode,
-                    permission: "view-pay-slip-reports",
+                    permission: "view-salary-payment-reports",
                 },
                 {
                     title: "Inventory Report",
@@ -1036,10 +1036,10 @@ export const menusConfig = {
                         permission: "view-salary-reports",
                     },
                     {
-                        title: "Pay Slip",
-                        href: "/report/pay-slip",
+                        title: "Salary Payment Report",
+                        href: "/report/salary-payment-report",
                         icon: FileCode,
-                        permission: "view-pay-slip-reports",
+                        permission: "view-salary-payment-reports",
                     },
                     {
                         title: "Inventory Report",
@@ -1625,10 +1625,10 @@ export const menusConfig = {
                         permission: "view-salary-reports",
                     },
                     {
-                        title: "Pay Slip",
-                        href: "/report/pay-slip",
+                        title: "Salary Payment Report",
+                        href: "/report/salary-payment-report",
                         icon: FileCode,
-                        permission: "view-pay-slip-reports",
+                        permission: "view-salary-payment-reports",
                     },
                     {
                         title: "Inventory Report",

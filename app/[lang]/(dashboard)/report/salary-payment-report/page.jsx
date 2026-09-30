@@ -8,44 +8,20 @@ import formFields from "./config/fields";
 import columns from "./config/columns";
 import { useReport } from "@/domains/report/hook/useReport";
 import ReportActions from "@/components/report/ReportActions";
-import { useGenerateReportMutation } from "@/domains/report/services/reportApi";
-import toast from "react-hot-toast";
 import CollapsibleToggleButton from "@/components/ui/CollapsibleToggleButton";
 import { useFetchFeatureSettingsQuery } from "@/domains/settings/services/featureSettingApi";
 import {
     enforceProjectFeatureFormState,
     filterProjectFeatureItems,
     isProjectFeatureEnabled,
-    isSalaryApprovalFeatureEnabled,
 } from "@/lib/menu-features";
-import { permissionChecker } from "@/utility/helpers";
 
-const openBase64Pdf = (base64) => {
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-
-    const blob = new Blob([new Uint8Array(byteNumbers)], {
-        type: "application/pdf",
-    });
-
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-};
-
-const SalaryReportPage = () => {
-    const { actions, reportState } = useReport("hrm/salaries", "salaries");
+const SalaryPaymentReportPage = () => {
+    const { actions, reportState } = useReport("hrm/salary-payments", "salary-payment-report");
     const [filtersOpen, setFiltersOpen] = useState(true);
-    const [generateReport] = useGenerateReportMutation();
-    const canViewPaySlip = permissionChecker("view-pay-slip-reports");
 
     const { data: featureSettings } = useFetchFeatureSettingsQuery();
     const projectEnabled = isProjectFeatureEnabled(featureSettings);
-    const salaryApprovalEnabled = isSalaryApprovalFeatureEnabled(featureSettings);
 
     const projectId = reportState.form.watch("project_id");
     const scopeType = reportState.form.watch("scope_type");
@@ -53,30 +29,6 @@ const SalaryReportPage = () => {
     useEffect(() => {
         enforceProjectFeatureFormState(reportState.form, projectEnabled);
     }, [reportState.form, projectEnabled, projectId, scopeType]);
-
-    const handlePdf = async (salary) => {
-        try {
-            const response = await generateReport({
-                route: `pay-slip/${salary.id}`,
-                filters: {},
-                format: "pdf",
-            }).unwrap();
-
-            if (response?.pdf) {
-                openBase64Pdf(response.pdf);
-                return;
-            }
-
-            toast.error("Failed to generate pay slip PDF.");
-        } catch (error) {
-            const message =
-                error?.data?.message ||
-                error?.error ||
-                error?.message ||
-                "Failed to generate pay slip PDF.";
-            toast.error(message);
-        }
-    };
 
     return (
         <PageLayout>
@@ -97,7 +49,6 @@ const SalaryReportPage = () => {
                             formFields(
                                 reportState.form,
                                 reportState.user,
-                                salaryApprovalEnabled,
                             ),
                             projectEnabled,
                         )}
@@ -112,13 +63,12 @@ const SalaryReportPage = () => {
                 </div>
             )}
 
-            {/* Salary Report Table */}
+            {/* Payment Report Table */}
             <BasicTableLayout
                 columns={filterProjectFeatureItems(
                     columns(
-                        { onPdf: handlePdf, canViewPaySlip },
+                        {},
                         projectEnabled,
-                        salaryApprovalEnabled,
                     ),
                     projectEnabled,
                 )}
@@ -130,4 +80,4 @@ const SalaryReportPage = () => {
     );
 };
 
-export default SalaryReportPage;
+export default SalaryPaymentReportPage;

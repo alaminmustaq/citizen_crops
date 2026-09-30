@@ -27,10 +27,19 @@ export const useDynamicSelect = (
   );
 
   // get current value of parent (dependency)
-  const dependencyValue = dependencyKey ? form.watch(dependencyKey) : dependencyKey;
+  const watchedDep = dependencyKey ? form.watch(dependencyKey) : null;
+  const dependencyValue = useMemo(() => {
+    if (!dependencyKey) return true;
+    if (Array.isArray(dependencyKey)) {
+      const firstVal = Array.isArray(watchedDep) ? watchedDep[0] : form.getValues(dependencyKey[0]);
+      const raw = firstVal?.value ?? firstVal;
+      return raw && raw !== "null" && raw !== "undefined";
+    }
+    const val = watchedDep ?? form.getValues(dependencyKey);
+    const raw = val?.value ?? val;
+    return raw && raw !== "null" && raw !== "undefined";
+  }, [dependencyKey, watchedDep, form]);
 
-  
-  
   // memoized transformed results
   const transformed = useMemo(() => {
     const results = dynamicSearch?.data?.[dataKey] ?? [];
@@ -38,39 +47,41 @@ export const useDynamicSelect = (
   }, [dynamicSearch, dataKey, transformResults]);
 
   // manual trigger (like getMe) 
- const runTrigger = useCallback(
-  async (customSearch = "") => {
-    try {
-      let dependencyData = {};
+  const runTrigger = useCallback(
+    async (customSearch = "") => {
+      try {
+        let dependencyData = {};
 
-      if (dependencyKey) {
-        const keys = Array.isArray(dependencyKey) ? dependencyKey : [dependencyKey];
+        if (dependencyKey) {
+          const keys = Array.isArray(dependencyKey) ? dependencyKey : [dependencyKey];
 
-        keys.forEach((key) => {
-          const value = form.getValues(key);
-          if (value !== undefined && value !== null) {
-            dependencyData[key] = value?.value ?? value;
-          }
-        });
+          keys.forEach((key) => {
+            const value = form.getValues(key);
+            if (value !== undefined && value !== null) {
+              const rawVal = value?.value ?? value;
+              if (rawVal !== "null" && rawVal !== "undefined" && rawVal !== "") {
+                dependencyData[key] = rawVal;
+              }
+            }
+          });
+        }
+
+        const response = await triggerSearch({
+          data: {
+            search: customSearch,
+            url: urlValue, 
+            isActive: true,
+            ...dependencyData,
+          },
+        }).unwrap();
+
+        return { success: true, data: response };
+      } catch (error) {
+        return { success: false, error };
       }
-
-      const response = await triggerSearch({
-        data: {
-          search: customSearch,
-          url: urlValue, 
-          isActive: true,
-          ...dependencyData,
-        },
-      }).unwrap();
-
-      return { success: true, data: response };
-    } catch (error) {
-      console.error("Dynamic select trigger error:", error);
-      return { success: false, error };
-    }
-  },
-  [triggerSearch, urlValue, dependencyKey, form]
-);
+    },
+    [triggerSearch, urlValue, dependencyKey, form]
+  );
 
 
   // debounced search for async-select
@@ -93,7 +104,7 @@ export const useDynamicSelect = (
     setSearch("");
     setUrl(urlValue);
 
-    // no parent selected → return empty
+    // no parent selected → return empty without firing request
     if (dependencyKey && !dependencyValue) return [];
 
     const result = await runTrigger("");

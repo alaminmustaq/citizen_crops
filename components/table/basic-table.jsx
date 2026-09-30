@@ -62,6 +62,7 @@ export function BasicDataTable({
     const [columnFilters, setColumnFilters] = React.useState([]);
     const [columnVisibility, setColumnVisibility] = React.useState({});
     const [rowSelection, setRowSelection] = React.useState({});
+    const [selectedDataMap, setSelectedDataMap] = React.useState({});
     const [searchValue, setSearchValue] = React.useState(
         getFilterParams("search") || "",
     );
@@ -87,6 +88,7 @@ export function BasicDataTable({
     const table = useReactTable({
         data,
         columns,
+        getRowId: (row, index) => row?.id ?? row?.uuid ?? String(index),
         getCoreRowModel: getCoreRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
@@ -122,6 +124,28 @@ export function BasicDataTable({
                   },
               }),
     });
+
+    // Synchronize selectedDataMap across pagination pages
+    React.useEffect(() => {
+        if (!table) return;
+        const currentSelectedRows = table.getSelectedRowModel().rows;
+        setSelectedDataMap((prev) => {
+            const next = { ...prev };
+            // Add currently selected rows from current page
+            currentSelectedRows.forEach((r) => {
+                if (r.original && r.id) {
+                    next[r.id] = r.original;
+                }
+            });
+            // Remove unselected rows from current page
+            table.getRowModel().rows.forEach((r) => {
+                if (!r.getIsSelected() && next[r.id]) {
+                    delete next[r.id];
+                }
+            });
+            return next;
+        });
+    }, [rowSelection, data]);
 
     return (
         <>
@@ -276,17 +300,34 @@ export function BasicDataTable({
                                             return null;
                                         }
 
+                                        const selectedRows = Object.values(selectedDataMap);
+                                        const labelText =
+                                            typeof config.label === "function"
+                                                ? config.label(selectedRows)
+                                                : config.label;
+
+                                        const isBtnDisabled =
+                                            typeof config.disabled === "function"
+                                                ? config.disabled(selectedRows)
+                                                : config.disabled || false;
+
+                                        const handleResetSelection = () => {
+                                            setRowSelection({});
+                                            setSelectedDataMap({});
+                                        };
+
                                         return (
                                             <Button
                                                 color={
                                                     config.color || "primary"
                                                 }
                                                 key={key}
+                                                disabled={isBtnDisabled}
                                                 onClick={() => {
-                                                    config.action();
+                                                    config.action(selectedRows, handleResetSelection);
                                                 }}
                                             >
-                                                {config.label}
+                                                {labelText}
                                             </Button>
                                         );
                                     },
